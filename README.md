@@ -62,7 +62,7 @@ target_link_libraries(YourTarget PRIVATE Base256)
 If your parent project does not already expose the library headers, add the
 submodule's `src` directory to your include path.
 
-> **Note**
+> [!NOTE]
 > Base256 is a library, not a standalone executable. The library code itself is
 > meant to be used from another program. The tests, however, can be built and run
 > directly from this repository without integrating Base256 into another project.
