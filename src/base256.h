@@ -14,7 +14,11 @@ class Base256 {
 
     Base256(const Base256 &base256) { data = base256.data; }
 
+    Base256(const ByteArray& bytes) : data(bytes) {}
+
     Base256() { data = convertToVector(0); }
+    
+    const ByteArray& getBytes() const { return data; }
 
     void add(const ByteArray &b) noexcept;
 
