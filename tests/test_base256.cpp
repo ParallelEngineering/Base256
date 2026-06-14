@@ -373,6 +373,28 @@ TEST_CASE("Base256: power edge cases") {
     REQUIRE(largePower == Base256(65536));
 }
 
+TEST_CASE("Base256: modPow (modular exponentiation)") {
+    SECTION("Known small results") {
+        REQUIRE(Base256::modPow(make(2), make(10), make(1000)) == make(24));
+        REQUIRE(Base256::modPow(make(7), make(3), make(13)) == make(5));
+        REQUIRE(Base256::modPow(make(12), make(7), make(13)) == make(12));
+    }
+
+    SECTION("Exponent zero yields multiplicative identity") {
+        REQUIRE(Base256::modPow(make(5), make(0), make(13)) == make(1));
+        REQUIRE(Base256::modPow(make(0), make(0), make(13)) == make(1));
+    }
+
+    SECTION("Zero base stays zero for positive exponents") {
+        REQUIRE(Base256::modPow(make(0), make(5), make(13)) == make(0));
+        REQUIRE(Base256::modPow(make(0), make(64), make(17)) == make(0));
+    }
+
+    SECTION("Larger exponent still reduces correctly") {
+        REQUIRE(Base256::modPow(make(2), make(64), make(17)) == make(1));
+    }
+}
+
 TEST_CASE("Base256: pow (exponentiation)") {
     SECTION("Power of zero (x^0 = 1)") {
         REQUIRE(Base256::pow(make(10), 0) == make(1));
