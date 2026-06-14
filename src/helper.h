@@ -1,5 +1,5 @@
-#ifndef RSA_ENCRYPTOR_HELPER_H
-#define RSA_ENCRYPTOR_HELPER_H
+#ifndef BASE_256_HELPER_H
+#define BASE_256_HELPER_H
 
 #include <assert.h>
 
