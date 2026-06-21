@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
+#include <utility>
 
 #include "helper.h"
 
@@ -14,12 +15,11 @@ namespace operations {
 
         Base256(const Base256 &base256) { data = base256.data; }
 
-        Base256(const ByteArray &bytes) : data(bytes) {
-        }
+        Base256(ByteArray bytes) : data(std::move(bytes)) { }
 
         Base256() { data = convertToVector(0); }
 
-        const ByteArray &getBytes() const { return data; }
+        [[nodiscard]] const ByteArray &getBytes() const { return data; }
 
         void add(const ByteArray &b) noexcept;
 
@@ -30,10 +30,6 @@ namespace operations {
         void mul(const ByteArray &b) noexcept;
 
         void div(const ByteArray &divisor, ByteArray *remaining = nullptr) noexcept;
-
-        static Base256 pow(const Base256 &a, const std::uint64_t &pow);
-
-        static Base256 modPow(Base256 base, Base256 exponent, const Base256 &modulus);
 
         void print() const {
             // Make a copy because we will modify it

@@ -4,8 +4,10 @@
 #include <sstream>
 
 #include "../src/base256.h"
+#include "../src/math_utils.h"
 
 using operations::Base256;
+using namespace operations::math;
 
 static Base256 make(const uint64_t v) { return Base256(v); }
 
@@ -364,80 +366,80 @@ TEST_CASE("Base256: print outputs base10 string to cout") {
 
 TEST_CASE("Base256: power edge cases") {
     // Test 255^2 (Should be 65025, or [0x01, 0xFE] in little-endian)
-    Base256 res = Base256::pow(Base256(255), 2);
+    Base256 res = pow(Base256(255), 2);
     REQUIRE(res == Base256(65025));
 
     // Test a power that results in a huge number of trailing zeros in Base-256
     // 256^2 should be [0, 0, 1]
-    Base256 largePower = Base256::pow(Base256(2), 16);
+    Base256 largePower = pow(Base256(2), 16);
     REQUIRE(largePower == Base256(65536));
 }
 
 TEST_CASE("Base256: modPow (modular exponentiation)") {
     SECTION("Known small results") {
-        REQUIRE(Base256::modPow(make(2), make(10), make(1000)) == make(24));
-        REQUIRE(Base256::modPow(make(7), make(3), make(13)) == make(5));
-        REQUIRE(Base256::modPow(make(12), make(7), make(13)) == make(12));
+        REQUIRE(modPow(make(2), make(10), make(1000)) == make(24));
+        REQUIRE(modPow(make(7), make(3), make(13)) == make(5));
+        REQUIRE(modPow(make(12), make(7), make(13)) == make(12));
     }
 
     SECTION("Exponent zero yields multiplicative identity") {
-        REQUIRE(Base256::modPow(make(5), make(0), make(13)) == make(1));
-        REQUIRE(Base256::modPow(make(0), make(0), make(13)) == make(1));
+        REQUIRE(modPow(make(5), make(0), make(13)) == make(1));
+        REQUIRE(modPow(make(0), make(0), make(13)) == make(1));
     }
 
     SECTION("Zero base stays zero for positive exponents") {
-        REQUIRE(Base256::modPow(make(0), make(5), make(13)) == make(0));
-        REQUIRE(Base256::modPow(make(0), make(64), make(17)) == make(0));
+        REQUIRE(modPow(make(0), make(5), make(13)) == make(0));
+        REQUIRE(modPow(make(0), make(64), make(17)) == make(0));
     }
 
     SECTION("Larger exponent still reduces correctly") {
-        REQUIRE(Base256::modPow(make(2), make(64), make(17)) == make(1));
+        REQUIRE(modPow(make(2), make(64), make(17)) == make(1));
     }
 }
 
 TEST_CASE("Base256: pow (exponentiation)") {
     SECTION("Power of zero (x^0 = 1)") {
-        REQUIRE(Base256::pow(make(10), 0) == make(1));
-        REQUIRE(Base256::pow(make(255), 0) == make(1));
-        REQUIRE(Base256::pow(make(MAX_U64), 0) == make(1));
+        REQUIRE(pow(make(10), 0) == make(1));
+        REQUIRE(pow(make(255), 0) == make(1));
+        REQUIRE(pow(make(MAX_U64), 0) == make(1));
         // Mathematical convention for programming: 0^0 = 1
-        REQUIRE(Base256::pow(make(0), 0) == make(1));
+        REQUIRE(pow(make(0), 0) == make(1));
     }
 
     SECTION("Power of one (x^1 = x)") {
-        REQUIRE(Base256::pow(make(0), 1) == make(0));
-        REQUIRE(Base256::pow(make(42), 1) == make(42));
-        REQUIRE(Base256::pow(make(MAX_U64), 1) == make(MAX_U64));
+        REQUIRE(pow(make(0), 1) == make(0));
+        REQUIRE(pow(make(42), 1) == make(42));
+        REQUIRE(pow(make(MAX_U64), 1) == make(MAX_U64));
     }
 
     SECTION("Zero to the power of X (0^x = 0)") {
-        REQUIRE(Base256::pow(make(0), 2) == make(0));
-        REQUIRE(Base256::pow(make(0), 100) == make(0));
+        REQUIRE(pow(make(0), 2) == make(0));
+        REQUIRE(pow(make(0), 100) == make(0));
     }
 
     SECTION("One to the power of X (1^x = 1)") {
-        REQUIRE(Base256::pow(make(1), 2) == make(1));
-        REQUIRE(Base256::pow(make(1), 100) == make(1));
+        REQUIRE(pow(make(1), 2) == make(1));
+        REQUIRE(pow(make(1), 100) == make(1));
     }
 
     SECTION("Standard combinations") {
-        REQUIRE(Base256::pow(make(2), 2) == make(4));
-        REQUIRE(Base256::pow(make(2), 8) == make(256));
-        REQUIRE(Base256::pow(make(2), 16) == make(65536));
-        REQUIRE(Base256::pow(make(10), 3) == make(1000));
-        REQUIRE(Base256::pow(make(5), 4) == make(625));
+        REQUIRE(pow(make(2), 2) == make(4));
+        REQUIRE(pow(make(2), 8) == make(256));
+        REQUIRE(pow(make(2), 16) == make(65536));
+        REQUIRE(pow(make(10), 3) == make(1000));
+        REQUIRE(pow(make(5), 4) == make(625));
     }
 
     SECTION("Extreme case: 2^64 perfectly overflows 64-bit boundaries") {
         // 2^64 evaluates to 18,446,744,073,709,551,616
         // Which is exactly MAX_U64 + 1
-        Base256 twoTo64 = Base256::pow(make(2), 64);
+        Base256 twoTo64 = pow(make(2), 64);
         REQUIRE(twoTo64 == make(MAX_U64) + make(1));
     }
 
     SECTION("Extreme case: 10^20 using print verification") {
         // 10^19 fits in uint64_t. 10^20 does not.
-        Base256 tenTo20 = Base256::pow(make(10), 20);
+        Base256 tenTo20 = pow(make(10), 20);
 
         std::stringstream buffer;
         std::streambuf *oldCout = std::cout.rdbuf(buffer.rdbuf());
@@ -450,9 +452,93 @@ TEST_CASE("Base256: pow (exponentiation)") {
     SECTION("Extreme case: Large base, small exponent (256^4)") {
         // 256^4 results in a very specific memory layout in Little-Endian Base-256
         // It requires exactly 5 bytes: [0, 0, 0, 0, 1]
-        Base256 res = Base256::pow(make(256), 4);
+        Base256 res = pow(make(256), 4);
 
         // We can verify this computationally by dividing by 256 four times
         REQUIRE(res / make(256) / make(256) / make(256) / make(256) == make(1));
+    }
+}
+
+TEST_CASE("Base256 Math Utils: gcd (Greatest Common Divisor)") {
+    SECTION("GCD of zero and a number is the number itself") {
+        REQUIRE(gcd(make(42), make(0)) == make(42));
+        REQUIRE(gcd(make(0), make(42)) == make(42));
+        REQUIRE(gcd(make(0), make(0)) == make(0));
+    }
+
+    SECTION("GCD of prime numbers is 1 (coprime)") {
+        // 101 and 103 are both prime numbers
+        REQUIRE(gcd(make(101), make(103)) == make(1));
+    }
+
+    SECTION("GCD with a common factor") {
+        // Both 12 and 15 share the factor 3
+        REQUIRE(gcd(make(12), make(15)) == make(3));
+    }
+
+    SECTION("GCD of larger numbers") {
+        // Verified: gcd(1234567890, 987654321) = 9
+        REQUIRE(gcd(make(1234567890), make(987654321)) == make(9));
+    }
+}
+
+TEST_CASE("Base256 Math Utils: modInverse (Modular Multiplicative Inverse)") {
+    SECTION("Small modular inverse test cases") {
+        // Verified: (3 * 4) % 11 = 12 % 11 = 1
+        REQUIRE(modInverse(make(3), make(11)) == make(4));
+
+        // Verified: (7 * 23) % 40 = 161 % 40 = 1
+        REQUIRE(modInverse(make(7), make(40)) == make(23));
+    }
+
+    SECTION("Edge case: Modulus is 1 always yields 0") {
+        REQUIRE(modInverse(make(5), make(1)) == make(0));
+    }
+
+    SECTION("Large RSA-like modular inverse case") {
+        // Verified with primes p = 1000003 and q = 1000033
+        // phi = (p - 1) * (q - 1) = 1000034000064
+        // e = 65537
+        // d = modInverse(e, phi) = 983264276609
+        Base256 phi(1000034000064ULL);
+        Base256 e(65537);
+        Base256 d = modInverse(e, phi);
+
+        REQUIRE(d == make(983264276609ULL));
+
+        // Double check: (e * d) % phi should equal 1
+        REQUIRE((e * d) % phi == make(1));
+    }
+}
+
+TEST_CASE("Base256 Math Utils: isPrime (Primality Testing)") {
+    SECTION("Numbers less than or equal to 1 are not prime") {
+        REQUIRE_FALSE(isPrime(make(0)));
+        REQUIRE_FALSE(isPrime(make(1)));
+    }
+
+    SECTION("Small known prime numbers") {
+        REQUIRE(isPrime(make(2)));
+        REQUIRE(isPrime(make(3)));
+        REQUIRE(isPrime(make(5)));
+        REQUIRE(isPrime(make(97)));
+        REQUIRE(isPrime(make(1000003)));
+    }
+
+    SECTION("Small known composite numbers") {
+        REQUIRE_FALSE(isPrime(make(4)));
+        REQUIRE_FALSE(isPrime(make(9)));
+        REQUIRE_FALSE(isPrime(make(15)));
+        REQUIRE_FALSE(isPrime(make(100)));
+        REQUIRE_FALSE(isPrime(make(1000005)));
+    }
+
+    SECTION("Large prime and composite numbers near 32-bit boundary") {
+        // 4294967291 is the largest prime number below 2^32
+        REQUIRE(isPrime(make(4294967291ULL)));
+
+        // 4294967293 is composite (9241 * 464773)
+        // It does not have small prime factors, forcing a thorough Miller-Rabin test
+        REQUIRE_FALSE(isPrime(make(4294967293ULL)));
     }
 }
