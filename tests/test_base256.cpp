@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/benchmark/catch_benchmark.hpp>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -541,4 +542,27 @@ TEST_CASE("Base256 Math Utils: isPrime (Primality Testing)") {
         // It does not have small prime factors, forcing a thorough Miller-Rabin test
         REQUIRE_FALSE(isPrime(make(4294967293ULL)));
     }
+}
+
+TEST_CASE("Base256: Performance Benchmarks", "[.][benchmark]") {
+    // 2048-Bit-Numbers (256 Bytes)
+    std::vector<uint8_t> bytesA(256, 0xAA);
+    std::vector<uint8_t> bytesB(256, 0x55);
+
+    Base256 largeNum(bytesA);
+    Base256 divisor(3);
+    Base256 largeDivisor(bytesB);
+
+    BENCHMARK("Division: 2048-Bit / 3") {
+        return largeNum / divisor;
+    };
+
+    BENCHMARK("Division: 2048-Bit / 2048-Bit") {
+        return largeNum / largeDivisor;
+    };
+
+    BENCHMARK("ModPow: 2048-Bit ^ 65537 mod 2048-Bit (RSA)") {
+        Base256 exponent(65537);
+        return modPow(largeNum, exponent, largeDivisor);
+    };
 }
