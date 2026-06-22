@@ -25,6 +25,8 @@ namespace operations {
 
         void sub(const ByteArray &b) noexcept;
 
+        void subInPlace(ByteArray &a, const ByteArray &b);
+
         ByteArray sub(const ByteArray &a, const ByteArray &b) noexcept;
 
         void mul(const ByteArray &b) noexcept;

@@ -75,6 +75,34 @@
     return result;
 }
 
+inline void addBitFromNumberInPlace(ByteArray &numberToShift,
+                                                const ByteArray &sourceNumber,
+                                                const std::int64_t bitIndex) {
+
+    // Validated boundary access
+    if (bitIndex < 0 || bitIndex > getStartBitIndex(sourceNumber)) {
+        return;
+    }
+
+    // bitIndex & 7 is equivalent to bitIndex % 8
+    const int sourceNumberMask = 0b1 << (bitIndex & 7);
+
+    // bitIndex >> 3 is equivalent to bitIndex / 8
+    const int sourceNumberIndex = bitIndex >> 3;
+
+    bool mostSignificantBit = (sourceNumber[sourceNumberIndex] & sourceNumberMask) != 0;
+    for (int i = 0; i < numberToShift.size(); i++) {
+        // The mask for MSB is 0x80 (128). We evaluate this BEFORE currentByte gets
+        // overwritten/shifted.
+        const std::uint8_t currentByte = numberToShift[i];
+        const bool nextMSB = (currentByte & 0x80) != 0;
+        numberToShift[i] = static_cast<std::uint8_t>((currentByte << 1) | mostSignificantBit);
+        mostSignificantBit = nextMSB;
+    }
+
+   if (mostSignificantBit) numberToShift.push_back(0b1);
+}
+
 [[nodiscard]] inline bool isBigger(const ByteArray &a, const ByteArray &b) noexcept {
     const std::uint32_t aSize = a.size();
     const std::uint32_t bSize = b.size();

@@ -95,6 +95,44 @@ void operations::Base256::sub(const ByteArray &b) noexcept {
     data = std::move(result);
 }
 
+void operations::Base256::subInPlace(ByteArray &a, const ByteArray &b) {
+    // Safely clamp to 0 if the number being subtracted is larger than the base
+    if (isBigger(b, a)) {
+        return;
+    }
+
+    // Handle an underflow when subtracting
+    bool borrow = false;
+
+    for (int i = 0; i < a.size(); i++) {
+        std::int32_t subtract;
+        // Check for the end of the subtractor
+        if (i >= b.size()) {
+            subtract = borrow;
+        } else {
+            subtract = borrow + b[i];
+        }
+        borrow = false;
+
+        if (a[i] >= subtract) {
+            // If the current number is as least as big as subtract
+            std::uint8_t number = a[i] - subtract;
+            a[i] = number;
+        } else {
+            // Borrow from the next number
+            subtract -= 256;
+            borrow = true;
+
+            // Here subtract can only be 0 or negative
+            std::uint8_t number = a[i] - subtract;
+            a[i] = number;
+        }
+    }
+
+    // Strip trailing zeroes to normalize
+    normalizeVector(a);
+}
+
 void operations::Base256::mul(const ByteArray &b) noexcept {
     const std::uint64_t aSize = data.size();
     const std::uint64_t bSize = b.size();
@@ -155,8 +193,8 @@ void operations::Base256::div(const ByteArray &divisor, ByteArray *remaining) no
                 break;
             }
 
-            dividendMask = sub(dividendMask, divisor);
-            dividendMask = addBitFromNumber(dividendMask, data, dividendIndex);
+            subInPlace(dividendMask, divisor);
+            addBitFromNumberInPlace(dividendMask, data, dividendIndex);
             dividendIndex--;
         } else {
             if (dividendIndex < 0) {
@@ -164,7 +202,7 @@ void operations::Base256::div(const ByteArray &divisor, ByteArray *remaining) no
                 break;
             }
 
-            dividendMask = addBitFromNumber(dividendMask, data, dividendIndex);
+            addBitFromNumberInPlace(dividendMask, data, dividendIndex);
             dividendIndex--;
         }
     }
