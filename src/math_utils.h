@@ -9,7 +9,7 @@ namespace operations::math {
     Base256 gcd(const Base256 &a, const Base256 &b);
 
     // Computes the modular multiplicative inverse of a modulo m
-    Base256 modInverse(Base256 a, Base256 m);
+    Base256 modInverse(const Base256 &a, const Base256 &m);
 
     // Performs the Miller-Rabin primality test on n
     bool isPrime(const Base256 &n);
