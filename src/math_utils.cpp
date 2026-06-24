@@ -3,6 +3,65 @@
 #include "helper.h"
 
 namespace operations::math {
+
+    namespace {
+        // Helper function to shift a Base256 number right by n bytes (dividing by 256^n)
+        Base256 shiftRightBytes(const Base256 &val, size_t n) {
+            const auto &bytes = val.getBytes();
+            if (n >= bytes.size()) {
+                return Base256(0);
+            }
+            ByteArray newBytes(bytes.begin() + n, bytes.end());
+            return Base256(newBytes);
+        }
+
+        // Barrett Reducer encapsulation to replace slow divisions
+        struct BarrettReducer {
+            Base256 modulus;
+            size_t k;
+            Base256 mu;
+
+            BarrettReducer(const Base256 &mod) : modulus(mod) {
+                k = modulus.getBytes().size();
+
+                // Create 256^(2k) as [0, 0, ..., 1] in little-endian representation
+                ByteArray tempBytes(2 * k + 1, 0);
+                tempBytes.back() = 1;
+                Base256 bigPower(tempBytes);
+
+                // Compute mu = floor(256^(2k) / modulus)
+                // This is the only division performed during the entire modPow operation
+                mu = bigPower / modulus;
+            }
+
+            // Reduces x modulo modulus, assuming x < modulus^2
+            Base256 reduce(const Base256 &x) const {
+                if (x < modulus) {
+                    return x;
+                }
+
+                // q1 = x >> (k-1)
+                size_t shift1 = (k > 1) ? (k - 1) : 0;
+                Base256 q1 = shiftRightBytes(x, shift1);
+
+                // q2 = q1 * mu
+                Base256 q2 = q1 * mu;
+
+                // q3 = q2 >> (k+1)
+                Base256 q3 = shiftRightBytes(q2, k + 1);
+
+                // r = x - q3 * modulus
+                Base256 r = x - (q3 * modulus);
+
+                // Since q3 is an approximation, we adjust at most twice
+                while (r >= modulus) {
+                    r -= modulus;
+                }
+                return r;
+            }
+        };
+    }
+
     bool isOdd(const Base256 &val) {
         const auto &bytes = val.getBytes();
         if (bytes.empty()) return false;
@@ -15,7 +74,6 @@ namespace operations::math {
 
         std::uint8_t carry = 0;
 
-        // Because this is little endian we shift the MSB to the LSB
         for (int i = static_cast<int>(bytes.size()) - 1; i >= 0; --i) {
             const std::uint8_t next_carry = (bytes[i] & 1) ? 0x80 : 0;
             bytes[i] = (bytes[i] >> 1) | carry;
@@ -87,7 +145,6 @@ namespace operations::math {
     }
 
     bool isPrime(const Base256 &n) {
-        // Basisprüfungen
         if (n <= Base256(1)) return false;
         if (n == Base256(2) || n == Base256(3)) return true;
         if (n % Base256(2) == Base256(0)) return false;
@@ -106,7 +163,6 @@ namespace operations::math {
             if (n % primeObj == Base256(0)) return false;
         }
 
-        // 2. Zerlegung: n - 1 = d * 2^s mit ultraschnellen Bitshifts
         Base256 d = n - Base256(1);
         std::uint32_t s = 0;
         while (!isZero(d.getBytes()) && !isOdd(d)) {
@@ -158,16 +214,24 @@ namespace operations::math {
     }
 
     Base256 modPow(Base256 base, Base256 exponent, const Base256 &modulus) {
-        if (modulus == Base256(1)) return Base256(0);
+        if (modulus <= Base256(1)) return Base256(0);
 
         Base256 result(1);
-        base = base % modulus;
+
+        // Initialize Barrett Reducer.
+        // This does exactly one slow division to precompute mu.
+        BarrettReducer reducer(modulus);
+
+        // Use fast reduction instead of % operator
+        base = reducer.reduce(base);
 
         while (!isZero(exponent.getBytes())) {
             if (isOdd(exponent)) {
-                result = (result * base) % modulus;
+                // Reduces result * base without division
+                result = reducer.reduce(result * base);
             }
-            base = (base * base) % modulus;
+            // Reduces base * base without division
+            base = reducer.reduce(base * base);
             exponent = divideByTwo(exponent);
         }
         return result;
