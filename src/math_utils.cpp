@@ -1,6 +1,32 @@
 #include "math_utils.h"
+#include <vector>
+#include "helper.h"
 
 namespace operations::math {
+    bool isOdd(const Base256 &val) {
+        const auto &bytes = val.getBytes();
+        if (bytes.empty()) return false;
+        return (bytes[0] & 1) != 0;
+    }
+
+    Base256 divideByTwo(const Base256 &val) {
+        auto bytes = val.getBytes();
+        if (bytes.empty()) return Base256(0);
+
+        std::uint8_t carry = 0;
+
+        // Because this is little endian we shift the MSB to the LSB
+        for (int i = static_cast<int>(bytes.size()) - 1; i >= 0; --i) {
+            const std::uint8_t next_carry = (bytes[i] & 1) ? 0x80 : 0;
+            bytes[i] = (bytes[i] >> 1) | carry;
+            carry = next_carry;
+        }
+
+        Base256::normalizeVector(bytes);
+
+        return Base256(bytes);
+    }
+
     Base256 gcd(const Base256 &a, const Base256 &b) {
         Base256 tempA = a;
         Base256 tempB = b;
@@ -74,23 +100,23 @@ namespace operations::math {
             331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419,
             421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499
         };
-        for (uint32_t p : smallPrimes) {
+        for (const std::uint32_t p: smallPrimes) {
             Base256 primeObj(p);
             if (n == primeObj) return true;
             if (n % primeObj == Base256(0)) return false;
         }
 
-        // 2. Zerlegung: Schreibe n - 1 als d * 2^s
+        // 2. Zerlegung: n - 1 = d * 2^s mit ultraschnellen Bitshifts
         Base256 d = n - Base256(1);
-        uint32_t s = 0;
-        while (d % Base256(2) == Base256(0)) {
-            d = d / Base256(2);
+        std::uint32_t s = 0;
+        while (!isZero(d.getBytes()) && !isOdd(d)) {
+            d = divideByTwo(d);
             s++;
         }
 
-        static const std::vector<uint32_t> bases = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29};
+        static const std::vector<std::uint32_t> bases = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29};
 
-        for (uint32_t baseVal : bases) {
+        for (uint32_t baseVal: bases) {
             Base256 a(baseVal);
             if (a >= n) break;
 
@@ -130,20 +156,20 @@ namespace operations::math {
         }
         return result;
     }
+
     Base256 modPow(Base256 base, Base256 exponent, const Base256 &modulus) {
         if (modulus == Base256(1)) return Base256(0);
 
         Base256 result(1);
         base = base % modulus;
 
-        while (exponent > Base256(0)) {
-            if (exponent % Base256(2) == Base256(1)) {
+        while (!isZero(exponent.getBytes())) {
+            if (isOdd(exponent)) {
                 result = (result * base) % modulus;
             }
             base = (base * base) % modulus;
-            exponent = exponent / Base256(2);
+            exponent = divideByTwo(exponent);
         }
         return result;
     }
-
 } // namespace operations::math

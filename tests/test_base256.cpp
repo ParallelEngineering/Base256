@@ -566,3 +566,22 @@ TEST_CASE("Base256: Performance Benchmarks", "[.][benchmark]") {
         return modPow(largeNum, exponent, largeDivisor);
     };
 }
+
+TEST_CASE("Base256: modPow Performance Benchmarks", "[.][benchmark][modpow]") {
+    std::vector<uint8_t> base_bytes(256, 0xAA);
+    std::vector<uint8_t> exp_bytes(256, 0x55);
+    std::vector<uint8_t> mod_bytes(256, 0xFF);
+
+    Base256 base(base_bytes);
+    Base256 exponent_large(exp_bytes);
+    Base256 exponent_small(65537);
+    Base256 modulus(mod_bytes);
+
+    BENCHMARK("modPow: 2048-Bit ^ 65537 mod 2048-Bit (Verschluesselung)") {
+        return modPow(base, exponent_small, modulus);
+    };
+
+    BENCHMARK("modPow: 2048-Bit ^ 2048-Bit mod 2048-Bit (Entschluesselung)") {
+        return modPow(base, exponent_large, modulus);
+    };
+}

@@ -1,7 +1,7 @@
 #ifndef BASE_256_HELPER_H
 #define BASE_256_HELPER_H
 
-#include <assert.h>
+#include <cassert>
 
 #include <cstdint>
 
@@ -91,12 +91,12 @@ inline void addBitFromNumberInPlace(ByteArray &numberToShift,
     const int sourceNumberIndex = bitIndex >> 3;
 
     bool mostSignificantBit = (sourceNumber[sourceNumberIndex] & sourceNumberMask) != 0;
-    for (int i = 0; i < numberToShift.size(); i++) {
+    for (unsigned char & i : numberToShift) {
         // The mask for MSB is 0x80 (128). We evaluate this BEFORE currentByte gets
         // overwritten/shifted.
-        const std::uint8_t currentByte = numberToShift[i];
+        const std::uint8_t currentByte = i;
         const bool nextMSB = (currentByte & 0x80) != 0;
-        numberToShift[i] = static_cast<std::uint8_t>((currentByte << 1) | mostSignificantBit);
+        i = static_cast<std::uint8_t>((currentByte << 1) | mostSignificantBit);
         mostSignificantBit = nextMSB;
     }
 
@@ -151,4 +151,4 @@ inline void addBitFromNumberInPlace(ByteArray &numberToShift,
     return true;
 }
 
-#endif  // RSA_ENCRYPTOR_HELPER_H
+#endif  // BASE_256_HELPER_H

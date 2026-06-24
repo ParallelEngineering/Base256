@@ -8,11 +8,5 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(src)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    include(CTest)
-    if (BUILD_TESTING)
-        add_subdirectory(tests)
-    endif()
-else()
-    message(STATUS "Skipping CTest/tests because CMAKE_BUILD_TYPE != Debug")
-endif()
+include(CTest)
+add_subdirectory(tests)

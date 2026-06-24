@@ -5,6 +5,8 @@
 
 namespace operations::math {
 
+    bool isOdd(const Base256 &val);
+    Base256 divideByTwo(const Base256 &val);
     // Computes the greatest common divisor of a and b
     Base256 gcd(const Base256 &a, const Base256 &b);
 
