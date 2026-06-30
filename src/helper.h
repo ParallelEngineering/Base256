@@ -28,6 +28,7 @@
     }
 
     assert(false);
+    return INVALID_START_BIT_INDEX;
 }
 
 [[nodiscard]] inline ByteArray convertToVector(const std::uint64_t number) noexcept {
@@ -102,11 +103,12 @@ inline void addBitFromNumberInPlace(ByteArray &numberToShift,
 [[nodiscard]] inline bool isBigger(const ByteArray &a, const ByteArray &b) noexcept {
     const std::uint64_t aSize = a.size();
     const std::uint64_t bSize = b.size();
-    const std::uint64_t iterations = aSize > bSize ? aSize : bSize;
+    const std::int64_t iterations = aSize > bSize ? aSize : bSize;
 
-    for (std::int64_t i = iterations - 1; i >= 0; i--) {
-        const std::uint64_t aValue = (i < aSize) ? a[i] : 0;
-        const std::uint64_t bValue = (i < bSize) ? b[i] : 0;
+    for (std::uint64_t i = iterations; i > 0; i--) {
+        const std::uint64_t index = i - 1;
+        const std::uint64_t aValue = (index < aSize) ? a[index] : 0;
+        const std::uint64_t bValue = (index < bSize) ? b[index] : 0;
 
         if (aValue > bValue) {
             return true;
@@ -127,7 +129,7 @@ inline void addBitFromNumberInPlace(ByteArray &numberToShift,
     const std::uint64_t iterations = aSize > bSize ? aSize : bSize;
 
     const std::uint64_t shortest = aSize < bSize ? aSize : bSize;
-    const ByteArray longest = aSize > bSize ? a : b;
+    const ByteArray &longest = aSize > bSize ? a : b;
 
     for (std::uint64_t i = 0; i < iterations; i++) {
         if (i >= shortest) {
