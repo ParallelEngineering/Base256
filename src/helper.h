@@ -17,30 +17,25 @@
     // Because of normalization, the highest bit is guaranteed
     // to be in the very last byte of the vector.
     const auto highestByteIndex = static_cast<std::int64_t>(a.size() - 1);
-    const std::uint8_t highestByte = a.back();
+    const std::uint64_t highestByte = a.back();
 
-    // Find the highest bit in just this one byte (max 8 iterations)
-    for (std::int64_t bit = 7; bit >= 0; bit--) {
+    // Find the highest bit in just this one byte (max 64 iterations)
+    for (std::int64_t bit = 63; bit >= 0; bit--) {
         if ((highestByte & (0b1 << bit)) != 0) {
             // Calculate total bit index: (Byte Position * 8) + Bit Position
-            return (highestByteIndex * 8) + bit;
+            return (highestByteIndex * 64) + bit;
         }
     }
 
     assert(false);
 }
 
-[[nodiscard]] inline ByteArray convertToVector(std::uint64_t number) noexcept {
+[[nodiscard]] inline ByteArray convertToVector(const std::uint64_t number) noexcept {
     ByteArray result;
 
     // Ensure 0 results in at least [0], never[]
     if (number == 0) return {0};
-
-    while (number) {
-        result.push_back(static_cast<std::uint8_t>(number & 0xFF));
-        number >>= 8;
-    }
-
+    result.push_back(number);
     return result;
 }
 
@@ -54,19 +49,19 @@
         return {0};
     }
 
-    // bitIndex & 7 is equivalent to bitIndex % 8
-    const int sourceNumberMask = 0b1 << (bitIndex & 7);
+    // bitIndex & 63 is equivalent to bitIndex % 64
+    const int sourceNumberMask = 0b1 << (bitIndex & 63);
+    constexpr std::uint64_t mask = 0x7FFF'FFFF'FFFF'FFFFULL;
 
-    // bitIndex >> 3 is equivalent to bitIndex / 8
-    const int sourceNumberIndex = bitIndex >> 3;
+    const int sourceNumberIndex = bitIndex / 64;
 
     bool mostSignificantBit = (sourceNumber[sourceNumberIndex] & sourceNumberMask) != 0;
 
-    for (const std::uint8_t currentByte : numberToShift) {
+    for (const std::uint64_t currentByte : numberToShift) {
         // The mask for MSB is 0x80 (128). We evaluate this BEFORE currentByte gets
         // overwritten/shifted.
-        const bool nextMSB = (currentByte & 0x80) != 0;
-        result.push_back(static_cast<std::uint8_t>((currentByte << 1) | mostSignificantBit));
+        const bool nextMSB = (currentByte & mask) != 0;
+        result.push_back((currentByte | mostSignificantBit));
         mostSignificantBit = nextMSB;
     }
 
@@ -85,18 +80,19 @@ inline void addBitFromNumberInPlace(ByteArray &numberToShift,
     }
 
     // bitIndex & 7 is equivalent to bitIndex % 8
-    const int sourceNumberMask = 0b1 << (bitIndex & 7);
+    const int sourceNumberMask = 0b1 << (bitIndex & 63);
+    constexpr std::uint64_t mask = 0x7FFF'FFFF'FFFF'FFFFULL;
 
     // bitIndex >> 3 is equivalent to bitIndex / 8
-    const int sourceNumberIndex = bitIndex >> 3;
+    const int sourceNumberIndex = bitIndex / 64;
 
     bool mostSignificantBit = (sourceNumber[sourceNumberIndex] & sourceNumberMask) != 0;
-    for (unsigned char & i : numberToShift) {
+    for (std::uint64_t i : numberToShift) {
         // The mask for MSB is 0x80 (128). We evaluate this BEFORE currentByte gets
         // overwritten/shifted.
         const std::uint8_t currentByte = i;
-        const bool nextMSB = (currentByte & 0x80) != 0;
-        i = static_cast<std::uint8_t>((currentByte << 1) | mostSignificantBit);
+        const bool nextMSB = (currentByte & mask) != 0;
+        i = currentByte | mostSignificantBit;
         mostSignificantBit = nextMSB;
     }
 
@@ -145,7 +141,7 @@ inline void addBitFromNumberInPlace(ByteArray &numberToShift,
 }
 
 [[nodiscard]] inline bool isZero(const ByteArray &a) {
-    for (const std::uint8_t number : a) {
+    for (const std::uint64_t number : a) {
         if (number != 0) return false;
     }
     return true;
