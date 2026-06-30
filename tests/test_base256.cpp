@@ -546,8 +546,8 @@ TEST_CASE("Base256 Math Utils: isPrime (Primality Testing)") {
 
 TEST_CASE("Base256: Performance Benchmarks", "[.][benchmark]") {
     // 2048-Bit-Numbers (256 Bytes)
-    std::vector<uint8_t> bytesA(256, 0xAA);
-    std::vector<uint8_t> bytesB(256, 0x55);
+    ByteArray bytesA(256, 0xAA);
+    ByteArray bytesB(256, 0x55);
 
     Base256 largeNum(bytesA);
     Base256 divisor(3);
@@ -568,9 +568,9 @@ TEST_CASE("Base256: Performance Benchmarks", "[.][benchmark]") {
 }
 
 TEST_CASE("Base256: modPow Performance Benchmarks", "[.][benchmark][modpow]") {
-    std::vector<uint8_t> base_bytes(256, 0xAA);
-    std::vector<uint8_t> exp_bytes(256, 0x55);
-    std::vector<uint8_t> mod_bytes(256, 0xFF);
+    ByteArray base_bytes(256, 0xAA);
+    ByteArray exp_bytes(256, 0x55);
+    ByteArray mod_bytes(256, 0xFF);
 
     Base256 base(base_bytes);
     Base256 exponent_large(exp_bytes);

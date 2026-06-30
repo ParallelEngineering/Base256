@@ -3,45 +3,42 @@
 #include <algorithm>
 
 void operations::Base256::add(const ByteArray &b) noexcept {
-    // Initialize the result vector to store the sum
     ByteArray result;
 
     // Get the max iterations based on the largest vector
-    const int iterations = std::max(data.size(), b.size());
+    const std::size_t iterations = std::max(data.size(), b.size());
+    result.reserve(iterations + 1);
 
-    // Carry to handle overflow between bytes
-    std::uint16_t carry = 0;
+    // Carry to handle the overflow. This can either be 0 or 1
+    std::uint64_t carry = 0;
 
-    for (int i = 0; i < iterations; i++) {
-        // Set up a holder for the sum
-        std::uint16_t sum = carry;
+    for (std::size_t i = 0; i < iterations; ++i) {
+        const std::uint64_t aVal = (i < data.size()) ? data[i] : 0ULL;
+        const std::uint64_t bVal = (i < b.size()) ? b[i] : 0ULL;
 
-        // Only add to sum if we actually have a value in a
-        if (i < data.size()) {
-            sum += data[i];
+        // Add both values
+        std::uint64_t sum = aVal + bVal;
+
+        // If the sum overflows, we can detect this by checking if the sum is smaller than aVal
+        // Theoretically we could also use bVal for checking because it is guaranteed that in that case,
+        // bot aVal and bVal are greater than sum.
+        std::uint64_t nextCarry = (sum < aVal) ? 1ULL : 0ULL;
+
+        // We add our previous carry
+        sum += carry;
+        if (sum < carry) {
+            nextCarry += 1ULL;
         }
 
-        // Only add to sum if we actually have a value in b
-        if (i < b.size()) {
-            sum += b[i];
-        }
-
-        // Calculate the carry which is the overflow beyond 255
-        carry = sum >> 8;
-
-        // Clear out everything except the lsb
-        sum &= 0xFF;
-
-        // Append the least significant byte of the sum to the result
-        result.push_back(static_cast<std::uint8_t>(sum));
+        result.push_back(sum);
+        carry = nextCarry;
     }
 
-    // If we got a carry we append this as well
+    // If we still have a carry left we need to append it
     if (carry) {
-        result.push_back(static_cast<std::uint8_t>(carry));
+        result.push_back(carry);
     }
 
-    // Strip mathematical leading zeros (trailing in little-endian representation)
     normalizeVector(result);
 
     data = std::move(result);
