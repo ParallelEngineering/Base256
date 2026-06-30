@@ -81,48 +81,43 @@ void operations::Base256::add(const ByteArray &b) noexcept {
     return result;
 }
 
+void operations::Base256::subInPlace(ByteArray &a, const ByteArray &b) {
+    // Safely clamp to 0 if the number being subtracted is larger than the base
+    if (isBigger(b, a)) {
+        a = {0};
+        return;
+    }
+
+    // Track the borrow state across the subtraction steps
+    bool borrow = false;
+
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        const std::uint64_t aVal = a[i];
+        const std::uint64_t bVal = (i < b.size()) ? b[i] : 0ULL;
+
+        // Subtract bVal from aVal and check for an underflow (borrow)
+        std::uint64_t diff = aVal - bVal;
+        bool nextBorrow = (aVal < bVal);
+
+        // Subtract the previous borrow and check for an additional underflow
+        const std::uint64_t borrowVal = borrow ? 1ULL : 0ULL;
+        std::uint64_t finalDiff = diff - borrowVal;
+        if (diff < borrowVal) {
+            nextBorrow = true;
+        }
+
+        a[i] = finalDiff;
+        borrow = nextBorrow;
+    }
+
+    // Strip trailing zeroes to normalize the result
+    normalizeVector(a);
+}
+
 // The return value can only be positive, if it would be negative, 0 is returned
 void operations::Base256::sub(const ByteArray &b) noexcept {
     ByteArray result = sub(data, b);
     data = std::move(result);
-}
-
-void operations::Base256::subInPlace(ByteArray &a, const ByteArray &b) {
-    // Safely clamp to 0 if the number being subtracted is larger than the base
-    if (isBigger(b, a)) {
-        return;
-    }
-
-    // Handle an underflow when subtracting
-    bool borrow = false;
-
-    for (int i = 0; i < a.size(); i++) {
-        std::int32_t subtract;
-        // Check for the end of the subtractor
-        if (i >= b.size()) {
-            subtract = borrow;
-        } else {
-            subtract = borrow + b[i];
-        }
-        borrow = false;
-
-        if (a[i] >= subtract) {
-            // If the current number is as least as big as subtract
-            std::uint8_t number = a[i] - subtract;
-            a[i] = number;
-        } else {
-            // Borrow from the next number
-            subtract -= 256;
-            borrow = true;
-
-            // Here subtract can only be 0 or negative
-            std::uint8_t number = a[i] - subtract;
-            a[i] = number;
-        }
-    }
-
-    // Strip trailing zeroes to normalize
-    normalizeVector(a);
 }
 
 void operations::Base256::mul(const ByteArray &b) noexcept {
