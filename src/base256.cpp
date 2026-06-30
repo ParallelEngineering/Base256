@@ -51,36 +51,31 @@ void operations::Base256::add(const ByteArray &b) noexcept {
     }
 
     ByteArray result;
+    result.reserve(a.size());
 
-    // Handle an underflow when subtracting
+    // Track the borrow state across the subtraction steps
     bool borrow = false;
 
-    for (int i = 0; i < a.size(); i++) {
-        std::int32_t subtract;
-        // Check for the end of the subtractor
-        if (i >= b.size()) {
-            subtract = borrow;
-        } else {
-            subtract = borrow + b[i];
-        }
-        borrow = false;
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        const std::uint64_t aVal = a[i];
+        const std::uint64_t bVal = (i < b.size()) ? b[i] : 0ULL;
 
-        if (a[i] >= subtract) {
-            // If the current number is as least as big as subtract
-            std::uint8_t number = a[i] - subtract;
-            result.push_back(number);
-        } else {
-            // Borrow from the next number
-            subtract -= 256;
-            borrow = true;
+        // Subtract bVal from aVal and check for an underflow (borrow)
+        std::uint64_t diff = aVal - bVal;
+        bool nextBorrow = (aVal < bVal);
 
-            // Here subtract can only be 0 or negative
-            std::uint8_t number = a[i] - subtract;
-            result.push_back(number);
+        // Subtract the previous borrow and check for an additional underflow
+        const std::uint64_t borrowVal = borrow ? 1ULL : 0ULL;
+        std::uint64_t finalDiff = diff - borrowVal;
+        if (diff < borrowVal) {
+            nextBorrow = true;
         }
+
+        result.push_back(finalDiff);
+        borrow = nextBorrow;
     }
 
-    // Strip trailing zeroes to normalize
+    // Strip trailing zeroes to normalize the result
     normalizeVector(result);
 
     return result;
