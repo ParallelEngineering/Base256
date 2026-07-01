@@ -129,23 +129,25 @@ void operations::Base256::mul(const ByteArray &b) noexcept {
 
     for (std::uint64_t i = 0; i < aSize; i++) {
         // Set up the carry value for each iteration
-        std::uint16_t carry = 0;
+        std::uint64_t carry = 0;
 
-        for (uint64_t x = 0; x < bSize; x++) {
+        for (std::uint64_t x = 0; x < bSize; x++) {
             // Calculate the product by adding up the previous result, the carry, and the new
             // product
-            const std::uint16_t product = result[i + x] + carry + (data[i] * b[x]);
+            const std::uint64_t product = result[i + x] + carry + (data[i] * b[x]);
 
-            // Calculate the carry which is the overflow beyond 255
-            carry = product >> 8;
+            // Calculate the carry
+            if (product < data[i]) {
+                carry = product;
+            }
 
             // Store the least significant byte (lsb) of the product in the result
-            result[i + x] = static_cast<std::uint8_t>(product & 0xFF);
+            result[i + x] = product;
         }
 
         // If there is a carry, append it to the result
         // But with the offset of bSize because of the previous inner loop
-        result[i + bSize] += static_cast<std::uint8_t>(carry);
+        result[i + bSize] += carry;
     }
 
     // Since aSize + bSize typically provides extra buffering, normalize the number safely
