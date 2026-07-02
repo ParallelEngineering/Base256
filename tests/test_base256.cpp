@@ -142,17 +142,8 @@ TEST_CASE("Base256: subtraction & compound subtraction") {
 
 TEST_CASE("Base256: multiplication & compound multiplication") {
     SECTION("Simple mul") {
-        Base256 a(7);
-        Base256 b(6);
-        Base256 c(42);
-        c = a * b;
 
-        for (auto bytes = c.getBytes(); uint8_t byte : bytes) {
-            std::cout << static_cast<int>(byte) << ' ';
-        }
-        std::cout << std::endl;
-
-        REQUIRE(make(7) * make(6) == make(42));
+        SECTION("Simple mul") { REQUIRE(make(7) * make(6) == make(42)); }
     }
 
     SECTION("Mul by zero and one") {
