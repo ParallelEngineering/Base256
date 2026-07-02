@@ -34,10 +34,8 @@ namespace operations {
         void div(const ByteArray &divisor, ByteArray *remaining = nullptr) noexcept;
 
         void print() const {
-            // Make a copy because we will modify it
             ByteArray temp = data;
 
-            // Handle zero explicitly
             if (isZero(temp)) {
                 std::cout << "0" << std::endl;
                 return;
@@ -46,13 +44,13 @@ namespace operations {
             std::string result;
 
             while (!isZero(temp)) {
-                std::uint16_t remainder = 0;
+                std::uint64_t remainder = 0;
 
-                // Divide temp by 10 (base256 -> base10 conversion step)
+                // TODO protable fallback
                 for (std::int64_t i = static_cast<std::int64_t>(temp.size()) - 1; i >= 0; --i) {
-                    const std::uint16_t current = (remainder << 8) | temp[i];
-                    temp[i] = static_cast<std::uint8_t>(current / 10);
-                    remainder = current % 10;
+                    const __uint128_t current = (static_cast<__uint128_t>(remainder) << 64) | temp[i];
+                    temp[i] = static_cast<std::uint64_t>(current / 10);
+                    remainder = static_cast<std::uint64_t>(current % 10);
                 }
 
                 result.push_back(static_cast<char>('0' + remainder));

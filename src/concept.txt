@@ -1,0 +1,53 @@
+a: u64
+b: u64
+
+n1 = a >> 32
+n2 = a & 0xFFFFFFFF
+
+n3 = b >> 32
+n4 = b & 0xFFFFFFFF
+
+// Obere Grenze
+r1 = n1 * n3
+
+// Untere Grenze
+r2 = n2 * n4
+
+// Mitteler Wert
+r3 = n1 * n4
+r4 = n2 * n3
+
+// obere Bits zusammensetzen
+c1 = r1 >> 32
+c2 = r3 >> 32
+fr1 = (r1 << 32) | (r3 & 0xFFFFFFFFULL)
+
+// oberen carry berechnen
+fc1 = (c1 << 32) | c2
+
+// untere Bits zusammensetzen
+c3 = r2 >> 32
+r2 &= 0xFFFFFFFF
+c4 = r4 >> 32
+fr2 = (r4 << 32) | r2
+
+// unteren carry berechnen
+fc2 = c3 | (c4 << 32)
+
+// das finale low also die unteren 64 bits
+fl: u64 = fr2
+runningCarry: u64 = 0
+valFL: u64 = fc2 << 32
+fl += valFL
+if (valFL > fl) {
+	runningCarry += 1ULL
+}
+
+// das finale high also die oberen 64 bits
+valFH: u64 = fr1 << 32
+fl += valFH
+if (valFH > fl) {
+	runningCarry += 1ULL
+}
+
+fh = (fc2 >> 32) + (fr1 >> 32) + fc1 + runningCarry;

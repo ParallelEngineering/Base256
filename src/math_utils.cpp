@@ -72,10 +72,10 @@ namespace operations::math {
         auto bytes = val.getBytes();
         if (bytes.empty()) return Base256(0);
 
-        std::uint8_t carry = 0;
+        std::uint64_t carry = 0;
 
         for (int i = static_cast<int>(bytes.size()) - 1; i >= 0; --i) {
-            const std::uint8_t next_carry = (bytes[i] & 1) ? 0x80 : 0;
+            const std::uint64_t next_carry = (bytes[i] & 1) ? 0x8000'0000'0000'0000ULL : 0;
             bytes[i] = (bytes[i] >> 1) | carry;
             carry = next_carry;
         }
