@@ -3,7 +3,6 @@
 #include "helper.h"
 
 namespace operations::math {
-
     namespace {
         // Helper function to shift a Base256 number right by n bytes (dividing by 256^n)
         Base256 shiftRightBytes(const Base256 &val, size_t n) {
@@ -60,6 +59,20 @@ namespace operations::math {
                 return r;
             }
         };
+
+        Base256 modPowWithReducer(Base256 base, Base256 exponent, const BarrettReducer &reducer) {
+            Base256 result(1);
+            base = reducer.reduce(base);
+
+            while (!isZero(exponent.getBytes())) {
+                if (isOdd(exponent)) {
+                    result = reducer.reduce(result * base);
+                }
+                base = reducer.reduce(base * base);
+                exponent = divideByTwo(exponent);
+            }
+            return result;
+        }
     }
 
     bool isOdd(const Base256 &val) {
@@ -170,13 +183,15 @@ namespace operations::math {
             s++;
         }
 
+        BarrettReducer reducer(n);
+
         static const std::vector<std::uint32_t> bases = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29};
 
         for (uint32_t baseVal: bases) {
             Base256 a(baseVal);
             if (a >= n) break;
 
-            Base256 x = modPow(a, d, n);
+            Base256 x = modPowWithReducer(a, d, reducer);
 
             if (x == Base256(1) || x == n - Base256(1)) {
                 continue;
@@ -184,7 +199,8 @@ namespace operations::math {
 
             bool composite = true;
             for (uint32_t r = 1; r < s; r++) {
-                x = modPow(x, Base256(2), n);
+                x = reducer.reduce(x * x);
+
                 if (x == n - Base256(1)) {
                     composite = false;
                     break;
@@ -216,24 +232,7 @@ namespace operations::math {
     Base256 modPow(Base256 base, Base256 exponent, const Base256 &modulus) {
         if (modulus <= Base256(1)) return Base256(0);
 
-        Base256 result(1);
-
-        // Initialize Barrett Reducer.
-        // This does exactly one slow division to precompute mu.
         BarrettReducer reducer(modulus);
-
-        // Use fast reduction instead of % operator
-        base = reducer.reduce(base);
-
-        while (!isZero(exponent.getBytes())) {
-            if (isOdd(exponent)) {
-                // Reduces result * base without division
-                result = reducer.reduce(result * base);
-            }
-            // Reduces base * base without division
-            base = reducer.reduce(base * base);
-            exponent = divideByTwo(exponent);
-        }
-        return result;
+        return modPowWithReducer(base, exponent, reducer);
     }
 } // namespace operations::math

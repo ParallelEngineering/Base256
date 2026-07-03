@@ -16,6 +16,7 @@ include(Catch)
 
 add_executable(Base256-Tests
         test_base256.cpp
+        benchmark_base256.cpp
 )
 target_link_libraries(Base256-Tests
         PRIVATE

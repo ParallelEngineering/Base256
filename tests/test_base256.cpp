@@ -1,5 +1,4 @@
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/benchmark/catch_benchmark.hpp>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -125,7 +124,6 @@ TEST_CASE("Base256: subtraction & compound subtraction") {
     }
 
     SECTION("Negative result clamping (Underflow to 0)") {
-        // Based on your comment: "if it would be negative, 0 is returned"
         REQUIRE(make(10) - make(20) == make(0));
         REQUIRE(make(0) - make(1) == make(0));
         REQUIRE(make(500) - make(MAX_U64) == make(0));
@@ -142,7 +140,6 @@ TEST_CASE("Base256: subtraction & compound subtraction") {
 
 TEST_CASE("Base256: multiplication & compound multiplication") {
     SECTION("Simple mul") {
-
         SECTION("Simple mul") { REQUIRE(make(7) * make(6) == make(42)); }
     }
 
@@ -163,7 +160,6 @@ TEST_CASE("Base256: multiplication & compound multiplication") {
         Base256 b(4294967295);
         Base256 c = a * b;  // Should be 0xFFFFFFFE00000001 (8 bytes)
 
-        // Verify via division
         REQUIRE(c / a == b);
         REQUIRE(c / b == a);
     }
@@ -219,7 +215,6 @@ TEST_CASE("Base256: division & compound division") {
 }
 
 TEST_CASE("Base256: division by zero (edge cases)") {
-    // Tests the left side of your OR statement: `isZero(divisor)`
     SECTION("Dividing a normal number by zero yields zero") {
         REQUIRE(make(42) / make(0) == make(0));
         REQUIRE(make(MAX_U64) / make(0) == make(0));
@@ -229,23 +224,15 @@ TEST_CASE("Base256: division by zero (edge cases)") {
 }
 
 TEST_CASE("Base256: remainder / modulo logic") {
-    // Assuming you have implemented operator% (e.g., a % b)
-    // If not, adapt this to test your exposed remainder API or `div()` method
-
     SECTION("Remainder of zero dividend yields zero") {
-        // Tests the interior block: `if (remaining != nullptr) *remaining = {0};`
-        // when `initialDividendIndex < 0`
         REQUIRE(make(0) % make(123456) == make(0));
     }
 
     SECTION("Remainder of division by zero yields zero") {
-        // Tests the interior block: `if (remaining != nullptr) *remaining = {0};`
-        // when `isZero(divisor)`
         REQUIRE(make(123456) % make(0) == make(0));
     }
 
     SECTION("Normal fractional remainders") {
-        // Validates standard operation of the `remaining` pointer during `div`
         REQUIRE(make(10) % make(3) == make(1));
         REQUIRE(make(255) % make(2) == make(1));
         REQUIRE(make(1000) % make(333) == make(1));
@@ -295,7 +282,6 @@ TEST_CASE("Base256: comparisons edge cases") {
         REQUIRE(x == y);
         REQUIRE_FALSE(x != y);
 
-        // Strictness
         REQUIRE_FALSE(x < x);
         REQUIRE(x <= x);
         REQUIRE_FALSE(x > x);
@@ -319,20 +305,17 @@ TEST_CASE("Base256: comparisons edge cases") {
         REQUIRE(max64 > a256);
         REQUIRE(a0 < max64);
 
-        Base256 overflow = max64 + a1;  // Exceeds uint64_t
+        Base256 overflow = max64 + a1;
         REQUIRE(overflow > max64);
         REQUIRE(max64 < overflow);
     }
 }
 
 TEST_CASE("Base256: print outputs base10 string to cout") {
-    // Helper lambda to capture std::cout output safely
     auto capturePrint = [](const Base256 &num) {
         std::stringstream buffer;
-        // Redirect std::cout to our buffer
         std::streambuf *oldCout = std::cout.rdbuf(buffer.rdbuf());
         num.print();
-        // Restore std::cout to its original state
         std::cout.rdbuf(oldCout);
         return buffer.str();
     };
@@ -353,28 +336,22 @@ TEST_CASE("Base256: print outputs base10 string to cout") {
 
     SECTION("Standard large uint64_t numbers") {
         REQUIRE(capturePrint(make(1000000000)) == "1000000000\n");
-        // MAX_U64
         REQUIRE(capturePrint(make(MAX_U64)) == "18446744073709551615\n");
     }
 
     SECTION("Extreme cases: Exceeding uint64_t limitations") {
-        // MAX_U64 + 1
         Base256 overflowPlusOne = make(MAX_U64) + make(1);
         REQUIRE(capturePrint(overflowPlusOne) == "18446744073709551616\n");
 
-        // MAX_U64 * 10
         Base256 overflowTimesTen = make(MAX_U64) * make(10);
         REQUIRE(capturePrint(overflowTimesTen) == "184467440737095516150\n");
     }
 }
 
 TEST_CASE("Base256: power edge cases") {
-    // Test 255^2 (Should be 65025, or [0x01, 0xFE] in little-endian)
     Base256 res = pow(Base256(255), 2);
     REQUIRE(res == Base256(65025));
 
-    // Test a power that results in a huge number of trailing zeros in Base-256
-    // 256^2 should be [0, 0, 1]
     Base256 largePower = pow(Base256(2), 16);
     REQUIRE(largePower == Base256(65536));
 }
@@ -406,7 +383,6 @@ TEST_CASE("Base256: pow (exponentiation)") {
         REQUIRE(pow(make(10), 0) == make(1));
         REQUIRE(pow(make(255), 0) == make(1));
         REQUIRE(pow(make(MAX_U64), 0) == make(1));
-        // Mathematical convention for programming: 0^0 = 1
         REQUIRE(pow(make(0), 0) == make(1));
     }
 
@@ -435,14 +411,11 @@ TEST_CASE("Base256: pow (exponentiation)") {
     }
 
     SECTION("Extreme case: 2^64 perfectly overflows 64-bit boundaries") {
-        // 2^64 evaluates to 18,446,744,073,709,551,616
-        // Which is exactly MAX_U64 + 1
         Base256 twoTo64 = pow(make(2), 64);
         REQUIRE(twoTo64 == make(MAX_U64) + make(1));
     }
 
     SECTION("Extreme case: 10^20 using print verification") {
-        // 10^19 fits in uint64_t. 10^20 does not.
         Base256 tenTo20 = pow(make(10), 20);
 
         std::stringstream buffer;
@@ -454,11 +427,7 @@ TEST_CASE("Base256: pow (exponentiation)") {
     }
 
     SECTION("Extreme case: Large base, small exponent (256^4)") {
-        // 256^4 results in a very specific memory layout in Little-Endian Base-256
-        // It requires exactly 5 bytes: [0, 0, 0, 0, 1]
         Base256 res = pow(make(256), 4);
-
-        // We can verify this computationally by dividing by 256 four times
         REQUIRE(res / make(256) / make(256) / make(256) / make(256) == make(1));
     }
 }
@@ -471,27 +440,21 @@ TEST_CASE("Base256 Math Utils: gcd (Greatest Common Divisor)") {
     }
 
     SECTION("GCD of prime numbers is 1 (coprime)") {
-        // 101 and 103 are both prime numbers
         REQUIRE(gcd(make(101), make(103)) == make(1));
     }
 
     SECTION("GCD with a common factor") {
-        // Both 12 and 15 share the factor 3
         REQUIRE(gcd(make(12), make(15)) == make(3));
     }
 
     SECTION("GCD of larger numbers") {
-        // Verified: gcd(1234567890, 987654321) = 9
         REQUIRE(gcd(make(1234567890), make(987654321)) == make(9));
     }
 }
 
 TEST_CASE("Base256 Math Utils: modInverse (Modular Multiplicative Inverse)") {
     SECTION("Small modular inverse test cases") {
-        // Verified: (3 * 4) % 11 = 12 % 11 = 1
         REQUIRE(modInverse(make(3), make(11)) == make(4));
-
-        // Verified: (7 * 23) % 40 = 161 % 40 = 1
         REQUIRE(modInverse(make(7), make(40)) == make(23));
     }
 
@@ -500,17 +463,11 @@ TEST_CASE("Base256 Math Utils: modInverse (Modular Multiplicative Inverse)") {
     }
 
     SECTION("Large RSA-like modular inverse case") {
-        // Verified with primes p = 1000003 and q = 1000033
-        // phi = (p - 1) * (q - 1) = 1000034000064
-        // e = 65537
-        // d = modInverse(e, phi) = 983264276609
         Base256 phi(1000034000064ULL);
         Base256 e(65537);
         Base256 d = modInverse(e, phi);
 
         REQUIRE(d == make(983264276609ULL));
-
-        // Double check: (e * d) % phi should equal 1
         REQUIRE((e * d) % phi == make(1));
     }
 }
@@ -538,53 +495,7 @@ TEST_CASE("Base256 Math Utils: isPrime (Primality Testing)") {
     }
 
     SECTION("Large prime and composite numbers near 32-bit boundary") {
-        // 4294967291 is the largest prime number below 2^32
         REQUIRE(isPrime(make(4294967291ULL)));
-
-        // 4294967293 is composite (9241 * 464773)
-        // It does not have small prime factors, forcing a thorough Miller-Rabin test
         REQUIRE_FALSE(isPrime(make(4294967293ULL)));
     }
-}
-
-TEST_CASE("Base256: Performance Benchmarks", "[.][benchmark]") {
-    // 2048-Bit-Numbers (256 Bytes)
-    ByteArray bytesA(256, 0xAA);
-    ByteArray bytesB(256, 0x55);
-
-    Base256 largeNum(bytesA);
-    Base256 divisor(3);
-    Base256 largeDivisor(bytesB);
-
-    BENCHMARK("Division: 2048-Bit / 3") {
-        return largeNum / divisor;
-    };
-
-    BENCHMARK("Division: 2048-Bit / 2048-Bit") {
-        return largeNum / largeDivisor;
-    };
-
-    BENCHMARK("ModPow: 2048-Bit ^ 65537 mod 2048-Bit (RSA)") {
-        Base256 exponent(65537);
-        return modPow(largeNum, exponent, largeDivisor);
-    };
-}
-
-TEST_CASE("Base256: modPow Performance Benchmarks", "[.][benchmark][modpow]") {
-    ByteArray base_bytes(256, 0xAA);
-    ByteArray exp_bytes(256, 0x55);
-    ByteArray mod_bytes(256, 0xFF);
-
-    Base256 base(base_bytes);
-    Base256 exponent_large(exp_bytes);
-    Base256 exponent_small(65537);
-    Base256 modulus(mod_bytes);
-
-    BENCHMARK("modPow: 2048-Bit ^ 65537 mod 2048-Bit (Verschluesselung)") {
-        return modPow(base, exponent_small, modulus);
-    };
-
-    BENCHMARK("modPow: 2048-Bit ^ 2048-Bit mod 2048-Bit (Entschluesselung)") {
-        return modPow(base, exponent_large, modulus);
-    };
 }
