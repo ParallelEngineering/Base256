@@ -1,7 +1,7 @@
-# Base256
+# BigInt
 
-Base256 is a small C++20 library for unsigned big-integer arithmetic using
-Base-256 byte storage. It was developed for use in
+BigInt is a small C++20 library for unsigned big-integer arithmetic using
+64-bit limb storage. It was developed for use in
 [RSA-Encryptor](https://github.com/ParallelEngineering/RSA-Encryptor) and is
 intended to be integrated as a Git submodule.
 
@@ -11,43 +11,45 @@ The library provides arithmetic for numbers that can grow beyond native integer
 limits such as `uint64_t`. This makes it useful for cryptographic-style
 calculations where values often need more than the CPU's built-in integer width.
 
-## How Base256 works
+## How BigInt works
 
-`operations::Base256` stores a number as a dynamically sized `ByteArray`
-(`std::vector<uint8_t>`). Each byte is one Base-256 digit:
+`operations::BigInt` stores a number as a dynamically sized `ByteArray`
+(`std::vector<uint64_t>`). Each limb is one base-2^64 digit:
 
-- index `0` contains the least-significant byte
-- index `1` contains the next `256^1` byte
+- index `0` contains the least-significant limb
+- index `1` contains the next `(2^64)^1` limb
 - higher indexes continue the same little-endian layout
 
-After arithmetic operations, the internal byte array is normalized by removing
-unused high zero-bytes while keeping zero represented as a single byte.
+After arithmetic operations, the internal limb array is normalized by removing
+unused high zero-limbs while keeping zero represented as a single limb.
 
 For a deeper explanation of the internal representation, see
-[`docs/base256.md`](docs/base256.md).
+[`docs/bigint.md`](docs/bigint.md).
 
 ## Usage
 
 ```cpp
-#include "base256.h"
+#include "bigint.h"
+#include "math_utils.h"
 
-using operations::Base256;
+using operations::BigInt;
+using operations::math::pow;
 
 int main() {
-    Base256 a(4294967295ULL);
-    Base256 b(2);
+    BigInt a(4294967295ULL);
+    BigInt b(2);
 
-    Base256 sum = a + b;
-    Base256 product = a * b;
-    Base256 remainder = product % b;
-    Base256 power = Base256::pow(b, 16);
+    BigInt sum = a + b;
+    BigInt product = a * b;
+    BigInt remainder = product % b;
+    BigInt power = pow(b, 16);
 
     power.print();
 }
 ```
 
 The class supports construction from `uint64_t`, arithmetic operators
-`+`, `-`, `*`, `/`, `%`, compound assignments, comparisons, `Base256::pow`, and
+`+`, `-`, `*`, `/`, `%`, compound assignments, comparisons, `operations::math::pow`, and
 decimal output with `print()`.
 
 ## Integration
@@ -55,17 +57,17 @@ decimal output with `print()`.
 Add this repository to your parent project and include it with CMake:
 
 ```cmake
-add_subdirectory(lib/Base256)
-target_link_libraries(YourTarget PRIVATE Base256)
+add_subdirectory(lib/BigInt)
+target_link_libraries(YourTarget PRIVATE BigInt)
 ```
 
 If your parent project does not already expose the library headers, add the
 submodule's `src` directory to your include path.
 
 > [!NOTE]
-> Base256 is a library, not a standalone executable. The library code itself is
+> BigInt is a library, not a standalone executable. The library code itself is
 > meant to be used from another program. The tests, however, can be built and run
-> directly from this repository without integrating Base256 into another project.
+> directly from this repository without integrating BigInt into another project.
 
 ## Tests
 
@@ -76,5 +78,3 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
-
-

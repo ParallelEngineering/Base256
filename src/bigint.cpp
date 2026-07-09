@@ -1,8 +1,8 @@
-#include "base256.h"
+#include "bigint.h"
 
 #include <algorithm>
 
-void operations::Base256::add(const ByteArray &b) noexcept {
+void operations::BigInt::add(const ByteArray &b) noexcept {
     ByteArray result;
 
     // Get the max iterations based on the largest vector
@@ -44,7 +44,7 @@ void operations::Base256::add(const ByteArray &b) noexcept {
     data = std::move(result);
 }
 
-[[nodiscard]] ByteArray operations::Base256::sub(const ByteArray &a, const ByteArray &b) noexcept {
+[[nodiscard]] ByteArray operations::BigInt::sub(const ByteArray &a, const ByteArray &b) noexcept {
     // Safely clamp to 0 if the number being subtracted is larger than the base
     if (isBigger(b, a)) {
         return {0};
@@ -81,7 +81,7 @@ void operations::Base256::add(const ByteArray &b) noexcept {
     return result;
 }
 
-void operations::Base256::subInPlace(ByteArray &a, const ByteArray &b) {
+void operations::BigInt::subInPlace(ByteArray &a, const ByteArray &b) {
     // Safely clamp to 0 if the number being subtracted is larger than the base
     if (isBigger(b, a)) {
         a = {0};
@@ -115,12 +115,12 @@ void operations::Base256::subInPlace(ByteArray &a, const ByteArray &b) {
 }
 
 // The return value can only be positive, if it would be negative, 0 is returned
-void operations::Base256::sub(const ByteArray &b) noexcept {
+void operations::BigInt::sub(const ByteArray &b) noexcept {
     ByteArray result = sub(data, b);
     data = std::move(result);
 }
 
-void operations::Base256::mul(const ByteArray &b) noexcept {
+void operations::BigInt::mul(const ByteArray &b) noexcept {
     if (data.empty() || b.empty()) {
         data.clear();
         return;
@@ -198,7 +198,7 @@ void operations::Base256::mul(const ByteArray &b) noexcept {
     data = std::move(result);
 }
 
-void operations::Base256::div(const ByteArray &divisor, ByteArray *remaining) noexcept {
+void operations::BigInt::div(const ByteArray &divisor, ByteArray *remaining) noexcept {
     const std::int64_t initialDividendIndex = getStartBitIndex(data);
     if (isZero(divisor) || initialDividendIndex == INVALID_START_BIT_INDEX) {
         if (remaining != nullptr) *remaining = {0};

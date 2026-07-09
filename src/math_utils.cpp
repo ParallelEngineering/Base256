@@ -5,53 +5,53 @@
 namespace operations::math {
 
     namespace {
-        // Helper function to shift a Base256 number right by n bytes (dividing by 256^n)
-        Base256 shiftRightBytes(const Base256 &val, size_t n) {
-            const auto &bytes = val.getBytes();
-            if (n >= bytes.size()) {
-                return Base256(0);
+        // Shift a BigInt right by n limbs, dividing by (2^64)^n.
+        BigInt shiftRightLimbs(const BigInt &val, size_t n) {
+            const auto &limbs = val.getBytes();
+            if (n >= limbs.size()) {
+                return BigInt(0);
             }
-            ByteArray newBytes(bytes.begin() + n, bytes.end());
-            return Base256(newBytes);
+            ByteArray newLimbs(limbs.begin() + n, limbs.end());
+            return BigInt(newLimbs);
         }
 
         // Barrett Reducer encapsulation to replace slow divisions
         struct BarrettReducer {
-            Base256 modulus;
+            BigInt modulus;
             size_t k;
-            Base256 mu;
+            BigInt mu;
 
-            BarrettReducer(const Base256 &mod) : modulus(mod) {
+            BarrettReducer(const BigInt &mod) : modulus(mod) {
                 k = modulus.getBytes().size();
 
-                // Create 256^(2k) as [0, 0, ..., 1] in little-endian representation
-                ByteArray tempBytes(2 * k + 1, 0);
-                tempBytes.back() = 1;
-                Base256 bigPower(tempBytes);
+                // Create (2^64)^(2k) as [0, 0, ..., 1] in little-endian representation.
+                ByteArray tempLimbs(2 * k + 1, 0);
+                tempLimbs.back() = 1;
+                BigInt bigPower(tempLimbs);
 
-                // Compute mu = floor(256^(2k) / modulus)
+                // Compute mu = floor((2^64)^(2k) / modulus).
                 // This is the only division performed during the entire modPow operation
                 mu = bigPower / modulus;
             }
 
             // Reduces x modulo modulus, assuming x < modulus^2
-            Base256 reduce(const Base256 &x) const {
+            BigInt reduce(const BigInt &x) const {
                 if (x < modulus) {
                     return x;
                 }
 
                 // q1 = x >> (k-1)
                 size_t shift1 = (k > 1) ? (k - 1) : 0;
-                Base256 q1 = shiftRightBytes(x, shift1);
+                BigInt q1 = shiftRightLimbs(x, shift1);
 
                 // q2 = q1 * mu
-                Base256 q2 = q1 * mu;
+                BigInt q2 = q1 * mu;
 
                 // q3 = q2 >> (k+1)
-                Base256 q3 = shiftRightBytes(q2, k + 1);
+                BigInt q3 = shiftRightLimbs(q2, k + 1);
 
                 // r = x - q3 * modulus
-                Base256 r = x - (q3 * modulus);
+                BigInt r = x - (q3 * modulus);
 
                 // Since q3 is an approximation, we adjust at most twice
                 while (r >= modulus) {
@@ -62,15 +62,15 @@ namespace operations::math {
         };
     }
 
-    bool isOdd(const Base256 &val) {
+    bool isOdd(const BigInt &val) {
         const auto &bytes = val.getBytes();
         if (bytes.empty()) return false;
         return (bytes[0] & 1) != 0;
     }
 
-    Base256 divideByTwo(const Base256 &val) {
+    BigInt divideByTwo(const BigInt &val) {
         auto bytes = val.getBytes();
-        if (bytes.empty()) return Base256(0);
+        if (bytes.empty()) return BigInt(0);
 
         std::uint64_t carry = 0;
 
@@ -80,40 +80,40 @@ namespace operations::math {
             carry = next_carry;
         }
 
-        Base256::normalizeVector(bytes);
+        BigInt::normalizeVector(bytes);
 
-        return Base256(bytes);
+        return BigInt(bytes);
     }
 
-    Base256 gcd(const Base256 &a, const Base256 &b) {
-        Base256 tempA = a;
-        Base256 tempB = b;
-        while (tempB != Base256(0)) {
-            const Base256 t = tempB;
+    BigInt gcd(const BigInt &a, const BigInt &b) {
+        BigInt tempA = a;
+        BigInt tempB = b;
+        while (tempB != BigInt(0)) {
+            const BigInt t = tempB;
             tempB = tempA % tempB;
             tempA = t;
         }
         return tempA;
     }
 
-    Base256 modInverse(const Base256 &a, const Base256 &m) {
-        Base256 r0 = m;
-        Base256 r1 = a;
-        Base256 x0(0);
-        Base256 x1(1);
+    BigInt modInverse(const BigInt &a, const BigInt &m) {
+        BigInt r0 = m;
+        BigInt r1 = a;
+        BigInt x0(0);
+        BigInt x1(1);
 
         bool sign0 = true;
         bool sign1 = true;
 
-        while (r1 != Base256(0)) {
-            Base256 q = r0 / r1;
-            Base256 r2 = r0 % r1;
+        while (r1 != BigInt(0)) {
+            BigInt q = r0 / r1;
+            BigInt r2 = r0 % r1;
 
-            Base256 x2(0);
+            BigInt x2(0);
             bool sign2 = true;
 
             if (sign0 == sign1) {
-                Base256 qx = q * x1;
+                BigInt qx = q * x1;
                 if (x0 >= qx) {
                     x2 = x0 - qx;
                     sign2 = sign0;
@@ -134,8 +134,8 @@ namespace operations::math {
             sign1 = sign2;
         }
 
-        if (r0 != Base256(1)) {
-            return Base256(0);
+        if (r0 != BigInt(1)) {
+            return BigInt(0);
         }
 
         if (!sign0) {
@@ -144,10 +144,10 @@ namespace operations::math {
         return x0 % m;
     }
 
-    bool isPrime(const Base256 &n) {
-        if (n <= Base256(1)) return false;
-        if (n == Base256(2) || n == Base256(3)) return true;
-        if (n % Base256(2) == Base256(0)) return false;
+    bool isPrime(const BigInt &n) {
+        if (n <= BigInt(1)) return false;
+        if (n == BigInt(2) || n == BigInt(3)) return true;
+        if (n % BigInt(2) == BigInt(0)) return false;
 
         static const std::vector<uint32_t> smallPrimes = {
             3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
@@ -158,12 +158,12 @@ namespace operations::math {
             421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499
         };
         for (const std::uint32_t p: smallPrimes) {
-            Base256 primeObj(p);
+            BigInt primeObj(p);
             if (n == primeObj) return true;
-            if (n % primeObj == Base256(0)) return false;
+            if (n % primeObj == BigInt(0)) return false;
         }
 
-        Base256 d = n - Base256(1);
+        BigInt d = n - BigInt(1);
         std::uint32_t s = 0;
         while (!isZero(d.getBytes()) && !isOdd(d)) {
             d = divideByTwo(d);
@@ -173,19 +173,19 @@ namespace operations::math {
         static const std::vector<std::uint32_t> bases = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29};
 
         for (uint32_t baseVal: bases) {
-            Base256 a(baseVal);
+            BigInt a(baseVal);
             if (a >= n) break;
 
-            Base256 x = modPow(a, d, n);
+            BigInt x = modPow(a, d, n);
 
-            if (x == Base256(1) || x == n - Base256(1)) {
+            if (x == BigInt(1) || x == n - BigInt(1)) {
                 continue;
             }
 
             bool composite = true;
             for (uint32_t r = 1; r < s; r++) {
-                x = modPow(x, Base256(2), n);
-                if (x == n - Base256(1)) {
+                x = modPow(x, BigInt(2), n);
+                if (x == n - BigInt(1)) {
                     composite = false;
                     break;
                 }
@@ -199,9 +199,9 @@ namespace operations::math {
         return true;
     }
 
-    Base256 pow(const Base256 &a, const std::uint64_t &power) {
-        Base256 result(1);
-        Base256 base = a;
+    BigInt pow(const BigInt &a, const std::uint64_t &power) {
+        BigInt result(1);
+        BigInt base = a;
         std::uint64_t p = power;
         while (p > 0) {
             if (p % 2 == 1) {
@@ -213,10 +213,10 @@ namespace operations::math {
         return result;
     }
 
-    Base256 modPow(Base256 base, Base256 exponent, const Base256 &modulus) {
-        if (modulus <= Base256(1)) return Base256(0);
+    BigInt modPow(BigInt base, BigInt exponent, const BigInt &modulus) {
+        if (modulus <= BigInt(1)) return BigInt(0);
 
-        Base256 result(1);
+        BigInt result(1);
 
         // Initialize Barrett Reducer.
         // This does exactly one slow division to precompute mu.

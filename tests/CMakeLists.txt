@@ -14,17 +14,17 @@ FetchContent_MakeAvailable(Catch2)
 list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
 include(Catch)
 
-add_executable(Base256-Tests
-        test_base256.cpp
+add_executable(BigInt-Tests
+        test_bigint.cpp
 )
-target_link_libraries(Base256-Tests
+target_link_libraries(BigInt-Tests
         PRIVATE
-        Base256
+        BigInt
         Catch2::Catch2WithMain
 )
 
 # Catch2 integration in CTest
-catch_discover_tests(Base256-Tests
-        TEST_PREFIX base256:
+catch_discover_tests(BigInt-Tests
+        TEST_PREFIX bigint:
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )

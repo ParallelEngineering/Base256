@@ -4,65 +4,65 @@
 #include <limits>
 #include <sstream>
 
-#include "../src/base256.h"
+#include "../src/bigint.h"
 #include "../src/math_utils.h"
 
-using operations::Base256;
+using operations::BigInt;
 using namespace operations::math;
 
-static Base256 make(const uint64_t v) { return Base256(v); }
+static BigInt make(const uint64_t v) { return BigInt(v); }
 
 // Helper for maximum uint64_t value
 constexpr uint64_t MAX_U64 = std::numeric_limits<uint64_t>::max();
 
-TEST_CASE("Base256: constructors, copy, assignment, self-assignment") {
+TEST_CASE("BigInt: constructors, copy, assignment, self-assignment") {
     SECTION("Default is zero") {
-        Base256 a;
+        BigInt a;
         REQUIRE(a == make(0));
     }
 
     SECTION("Construct from uint64_t") {
-        Base256 a(42);
+        BigInt a(42);
         REQUIRE(a == make(42));
         REQUIRE(a != make(41));
     }
 
     SECTION("Construct from max uint64_t") {
-        Base256 a(MAX_U64);
+        BigInt a(MAX_U64);
         REQUIRE(a == make(MAX_U64));
         REQUIRE(a > make(MAX_U64 - 1));
     }
 
     SECTION("Copy constructor copies value") {
-        Base256 a(123456789);
-        Base256 b(a);
+        BigInt a(123456789);
+        BigInt b(a);
         REQUIRE(b == a);
     }
 
     SECTION("Assignment copies value") {
-        Base256 a(777);
-        Base256 b(888);
+        BigInt a(777);
+        BigInt b(888);
         b = a;
         REQUIRE(b == a);
     }
 
     SECTION("Self-assignment is safe") {
-        Base256 a(424242);
-        Base256 &ref = a;
+        BigInt a(424242);
+        BigInt &ref = a;
         a = ref;  // self-assign
         REQUIRE(a == make(424242));
     }
 }
 
-TEST_CASE("Base256: equality and inequality") {
-    Base256 a(0), b(0), c(1), d(MAX_U64);
+TEST_CASE("BigInt: equality and inequality") {
+    BigInt a(0), b(0), c(1), d(MAX_U64);
     REQUIRE(a == b);
     REQUIRE(a != c);
     REQUIRE(d == make(MAX_U64));
     REQUIRE(d != make(0));
 }
 
-TEST_CASE("Base256: addition & compound addition") {
+TEST_CASE("BigInt: addition & compound addition") {
     SECTION("Simple add") { REQUIRE(make(10) + make(20) == make(30)); }
 
     SECTION("Add zero is identity") {
@@ -79,9 +79,9 @@ TEST_CASE("Base256: addition & compound addition") {
     }
 
     SECTION("Addition exceeding uint64_t (8 bytes to 9 bytes)") {
-        Base256 a(MAX_U64);  // 0xFFFFFFFFFFFFFFFF
-        Base256 b(2);
-        Base256 c = a + b;
+        BigInt a(MAX_U64);  // 0xFFFFFFFFFFFFFFFF
+        BigInt b(2);
+        BigInt c = a + b;
 
         // We can't verify with make() because it exceeds uint64_t.
         // But we know (MAX_U64 + 2) - 2 should be MAX_U64
@@ -90,7 +90,7 @@ TEST_CASE("Base256: addition & compound addition") {
     }
 
     SECTION("Compound += operator") {
-        Base256 a(100);
+        BigInt a(100);
         a += make(50);
         REQUIRE(a == make(150));
         a += make(0);
@@ -106,7 +106,7 @@ TEST_CASE("Base256: addition & compound addition") {
     }
 }
 
-TEST_CASE("Base256: subtraction & compound subtraction") {
+TEST_CASE("BigInt: subtraction & compound subtraction") {
     SECTION("Simple sub") { REQUIRE(make(30) - make(20) == make(10)); }
 
     SECTION("Subtract zero is identity") { REQUIRE(make(123456) - make(0) == make(123456)); }
@@ -132,7 +132,7 @@ TEST_CASE("Base256: subtraction & compound subtraction") {
     }
 
     SECTION("Compound -= operator") {
-        Base256 a(100);
+        BigInt a(100);
         a -= make(40);
         REQUIRE(a == make(60));
         a -= make(60);
@@ -140,7 +140,7 @@ TEST_CASE("Base256: subtraction & compound subtraction") {
     }
 }
 
-TEST_CASE("Base256: multiplication & compound multiplication") {
+TEST_CASE("BigInt: multiplication & compound multiplication") {
     SECTION("Simple mul") {
 
         SECTION("Simple mul") { REQUIRE(make(7) * make(6) == make(42)); }
@@ -159,9 +159,9 @@ TEST_CASE("Base256: multiplication & compound multiplication") {
     }
 
     SECTION("Large multiplication (Exceeding uint64_t)") {
-        Base256 a(4294967295);  // 0xFFFFFFFF (4 bytes)
-        Base256 b(4294967295);
-        Base256 c = a * b;  // Should be 0xFFFFFFFE00000001 (8 bytes)
+        BigInt a(4294967295);  // 0xFFFFFFFF (4 bytes)
+        BigInt b(4294967295);
+        BigInt c = a * b;  // Should be 0xFFFFFFFE00000001 (8 bytes)
 
         // Verify via division
         REQUIRE(c / a == b);
@@ -169,7 +169,7 @@ TEST_CASE("Base256: multiplication & compound multiplication") {
     }
 
     SECTION("Compound *= operator") {
-        Base256 a(10);
+        BigInt a(10);
         a *= make(10);
         REQUIRE(a == make(100));
         a *= make(0);
@@ -185,7 +185,7 @@ TEST_CASE("Base256: multiplication & compound multiplication") {
     }
 }
 
-TEST_CASE("Base256: division & compound division") {
+TEST_CASE("BigInt: division & compound division") {
     SECTION("Exact division") {
         REQUIRE(make(42) / make(6) == make(7));
         REQUIRE(make(65536) / make(256) == make(256));
@@ -210,7 +210,7 @@ TEST_CASE("Base256: division & compound division") {
     }
 
     SECTION("Compound /= operator") {
-        Base256 a(100);
+        BigInt a(100);
         a /= make(2);
         REQUIRE(a == make(50));
         a /= make(50);
@@ -218,7 +218,7 @@ TEST_CASE("Base256: division & compound division") {
     }
 }
 
-TEST_CASE("Base256: division by zero (edge cases)") {
+TEST_CASE("BigInt: division by zero (edge cases)") {
     // Tests the left side of your OR statement: `isZero(divisor)`
     SECTION("Dividing a normal number by zero yields zero") {
         REQUIRE(make(42) / make(0) == make(0));
@@ -228,7 +228,7 @@ TEST_CASE("Base256: division by zero (edge cases)") {
     SECTION("Dividing zero by zero yields zero") { REQUIRE(make(0) / make(0) == make(0)); }
 }
 
-TEST_CASE("Base256: remainder / modulo logic") {
+TEST_CASE("BigInt: remainder / modulo logic") {
     // Assuming you have implemented operator% (e.g., a % b)
     // If not, adapt this to test your exposed remainder API or `div()` method
 
@@ -257,27 +257,27 @@ TEST_CASE("Base256: remainder / modulo logic") {
     }
 }
 
-TEST_CASE("Base256: mixed expressions & combinations") {
+TEST_CASE("BigInt: mixed expressions & combinations") {
     SECTION("(a + b) * c then divide back by c (c > 0)") {
         for (uint64_t a = 1; a <= 20; ++a)
             for (uint64_t b = 1; b <= 20; ++b)
                 for (uint64_t c = 1; c <= 20; ++c) {
-                    Base256 additionResult = make(a) + make(b);
-                    Base256 expr = additionResult * make(c);
-                    Base256 divisionResult = expr / make(c);
+                    BigInt additionResult = make(a) + make(b);
+                    BigInt expr = additionResult * make(c);
+                    BigInt divisionResult = expr / make(c);
                     REQUIRE(divisionResult == additionResult);
                 }
     }
 
     SECTION("Chained arithmetic: ((100 * 256) + 50 - 25) / 5 == 5125") {
-        Base256 result = ((make(100) * make(256)) + make(50) - make(25)) / make(5);
+        BigInt result = ((make(100) * make(256)) + make(50) - make(25)) / make(5);
         REQUIRE(result == make(5125));
     }
 }
 
-TEST_CASE("Base256: comparisons edge cases") {
-    Base256 a0(0), a1(1), a2(2), a255(255), a256(256);
-    Base256 max64(MAX_U64);
+TEST_CASE("BigInt: comparisons edge cases") {
+    BigInt a0(0), a1(1), a2(2), a255(255), a256(256);
+    BigInt max64(MAX_U64);
 
     SECTION("Basic ordering") {
         REQUIRE(a0 < a1);
@@ -290,8 +290,8 @@ TEST_CASE("Base256: comparisons edge cases") {
     }
 
     SECTION("Equality vs ordering on same values") {
-        Base256 x(123456);
-        Base256 y(123456);
+        BigInt x(123456);
+        BigInt y(123456);
         REQUIRE(x == y);
         REQUIRE_FALSE(x != y);
 
@@ -319,15 +319,15 @@ TEST_CASE("Base256: comparisons edge cases") {
         REQUIRE(max64 > a256);
         REQUIRE(a0 < max64);
 
-        Base256 overflow = max64 + a1;  // Exceeds uint64_t
+        BigInt overflow = max64 + a1;  // Exceeds uint64_t
         REQUIRE(overflow > max64);
         REQUIRE(max64 < overflow);
     }
 }
 
-TEST_CASE("Base256: print outputs base10 string to cout") {
+TEST_CASE("BigInt: print outputs base10 string to cout") {
     // Helper lambda to capture std::cout output safely
-    auto capturePrint = [](const Base256 &num) {
+    auto capturePrint = [](const BigInt &num) {
         std::stringstream buffer;
         // Redirect std::cout to our buffer
         std::streambuf *oldCout = std::cout.rdbuf(buffer.rdbuf());
@@ -359,27 +359,27 @@ TEST_CASE("Base256: print outputs base10 string to cout") {
 
     SECTION("Extreme cases: Exceeding uint64_t limitations") {
         // MAX_U64 + 1
-        Base256 overflowPlusOne = make(MAX_U64) + make(1);
+        BigInt overflowPlusOne = make(MAX_U64) + make(1);
         REQUIRE(capturePrint(overflowPlusOne) == "18446744073709551616\n");
 
         // MAX_U64 * 10
-        Base256 overflowTimesTen = make(MAX_U64) * make(10);
+        BigInt overflowTimesTen = make(MAX_U64) * make(10);
         REQUIRE(capturePrint(overflowTimesTen) == "184467440737095516150\n");
     }
 }
 
-TEST_CASE("Base256: power edge cases") {
+TEST_CASE("BigInt: power edge cases") {
     // Test 255^2 (Should be 65025, or [0x01, 0xFE] in little-endian)
-    Base256 res = pow(Base256(255), 2);
-    REQUIRE(res == Base256(65025));
+    BigInt res = pow(BigInt(255), 2);
+    REQUIRE(res == BigInt(65025));
 
-    // Test a power that results in a huge number of trailing zeros in Base-256
-    // 256^2 should be [0, 0, 1]
-    Base256 largePower = pow(Base256(2), 16);
-    REQUIRE(largePower == Base256(65536));
+    // Test a power that crosses multiple byte boundaries.
+    // 256^2 should be 65536.
+    BigInt largePower = pow(BigInt(2), 16);
+    REQUIRE(largePower == BigInt(65536));
 }
 
-TEST_CASE("Base256: modPow (modular exponentiation)") {
+TEST_CASE("BigInt: modPow (modular exponentiation)") {
     SECTION("Known small results") {
         REQUIRE(modPow(make(2), make(10), make(1000)) == make(24));
         REQUIRE(modPow(make(7), make(3), make(13)) == make(5));
@@ -401,7 +401,7 @@ TEST_CASE("Base256: modPow (modular exponentiation)") {
     }
 }
 
-TEST_CASE("Base256: pow (exponentiation)") {
+TEST_CASE("BigInt: pow (exponentiation)") {
     SECTION("Power of zero (x^0 = 1)") {
         REQUIRE(pow(make(10), 0) == make(1));
         REQUIRE(pow(make(255), 0) == make(1));
@@ -437,13 +437,13 @@ TEST_CASE("Base256: pow (exponentiation)") {
     SECTION("Extreme case: 2^64 perfectly overflows 64-bit boundaries") {
         // 2^64 evaluates to 18,446,744,073,709,551,616
         // Which is exactly MAX_U64 + 1
-        Base256 twoTo64 = pow(make(2), 64);
+        BigInt twoTo64 = pow(make(2), 64);
         REQUIRE(twoTo64 == make(MAX_U64) + make(1));
     }
 
     SECTION("Extreme case: 10^20 using print verification") {
         // 10^19 fits in uint64_t. 10^20 does not.
-        Base256 tenTo20 = pow(make(10), 20);
+        BigInt tenTo20 = pow(make(10), 20);
 
         std::stringstream buffer;
         std::streambuf *oldCout = std::cout.rdbuf(buffer.rdbuf());
@@ -454,16 +454,15 @@ TEST_CASE("Base256: pow (exponentiation)") {
     }
 
     SECTION("Extreme case: Large base, small exponent (256^4)") {
-        // 256^4 results in a very specific memory layout in Little-Endian Base-256
-        // It requires exactly 5 bytes: [0, 0, 0, 0, 1]
-        Base256 res = pow(make(256), 4);
+        // 256^4 crosses several byte boundaries while still fitting in one limb.
+        BigInt res = pow(make(256), 4);
 
         // We can verify this computationally by dividing by 256 four times
         REQUIRE(res / make(256) / make(256) / make(256) / make(256) == make(1));
     }
 }
 
-TEST_CASE("Base256 Math Utils: gcd (Greatest Common Divisor)") {
+TEST_CASE("BigInt Math Utils: gcd (Greatest Common Divisor)") {
     SECTION("GCD of zero and a number is the number itself") {
         REQUIRE(gcd(make(42), make(0)) == make(42));
         REQUIRE(gcd(make(0), make(42)) == make(42));
@@ -486,7 +485,7 @@ TEST_CASE("Base256 Math Utils: gcd (Greatest Common Divisor)") {
     }
 }
 
-TEST_CASE("Base256 Math Utils: modInverse (Modular Multiplicative Inverse)") {
+TEST_CASE("BigInt Math Utils: modInverse (Modular Multiplicative Inverse)") {
     SECTION("Small modular inverse test cases") {
         // Verified: (3 * 4) % 11 = 12 % 11 = 1
         REQUIRE(modInverse(make(3), make(11)) == make(4));
@@ -504,9 +503,9 @@ TEST_CASE("Base256 Math Utils: modInverse (Modular Multiplicative Inverse)") {
         // phi = (p - 1) * (q - 1) = 1000034000064
         // e = 65537
         // d = modInverse(e, phi) = 983264276609
-        Base256 phi(1000034000064ULL);
-        Base256 e(65537);
-        Base256 d = modInverse(e, phi);
+        BigInt phi(1000034000064ULL);
+        BigInt e(65537);
+        BigInt d = modInverse(e, phi);
 
         REQUIRE(d == make(983264276609ULL));
 
@@ -515,7 +514,7 @@ TEST_CASE("Base256 Math Utils: modInverse (Modular Multiplicative Inverse)") {
     }
 }
 
-TEST_CASE("Base256 Math Utils: isPrime (Primality Testing)") {
+TEST_CASE("BigInt Math Utils: isPrime (Primality Testing)") {
     SECTION("Numbers less than or equal to 1 are not prime") {
         REQUIRE_FALSE(isPrime(make(0)));
         REQUIRE_FALSE(isPrime(make(1)));
@@ -547,14 +546,14 @@ TEST_CASE("Base256 Math Utils: isPrime (Primality Testing)") {
     }
 }
 
-TEST_CASE("Base256: Performance Benchmarks", "[.][benchmark]") {
+TEST_CASE("BigInt: Performance Benchmarks", "[.][benchmark]") {
     // 2048-Bit-Numbers (256 Bytes)
     ByteArray bytesA(256, 0xAA);
     ByteArray bytesB(256, 0x55);
 
-    Base256 largeNum(bytesA);
-    Base256 divisor(3);
-    Base256 largeDivisor(bytesB);
+    BigInt largeNum(bytesA);
+    BigInt divisor(3);
+    BigInt largeDivisor(bytesB);
 
     BENCHMARK("Division: 2048-Bit / 3") {
         return largeNum / divisor;
@@ -565,20 +564,20 @@ TEST_CASE("Base256: Performance Benchmarks", "[.][benchmark]") {
     };
 
     BENCHMARK("ModPow: 2048-Bit ^ 65537 mod 2048-Bit (RSA)") {
-        Base256 exponent(65537);
+        BigInt exponent(65537);
         return modPow(largeNum, exponent, largeDivisor);
     };
 }
 
-TEST_CASE("Base256: modPow Performance Benchmarks", "[.][benchmark][modpow]") {
+TEST_CASE("BigInt: modPow Performance Benchmarks", "[.][benchmark][modpow]") {
     ByteArray base_bytes(256, 0xAA);
     ByteArray exp_bytes(256, 0x55);
     ByteArray mod_bytes(256, 0xFF);
 
-    Base256 base(base_bytes);
-    Base256 exponent_large(exp_bytes);
-    Base256 exponent_small(65537);
-    Base256 modulus(mod_bytes);
+    BigInt base(base_bytes);
+    BigInt exponent_large(exp_bytes);
+    BigInt exponent_small(65537);
+    BigInt modulus(mod_bytes);
 
     BENCHMARK("modPow: 2048-Bit ^ 65537 mod 2048-Bit (Verschluesselung)") {
         return modPow(base, exponent_small, modulus);
