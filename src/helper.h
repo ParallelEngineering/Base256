@@ -1,5 +1,5 @@
-#ifndef BASE_256_HELPER_H
-#define BASE_256_HELPER_H
+#ifndef BIGINT_HELPER_H
+#define BIGINT_HELPER_H
 
 #include <cassert>
 
@@ -15,15 +15,15 @@
     }
 
     // Because of normalization, the highest bit is guaranteed
-    // to be in the very last byte of the vector.
-    const std::uint64_t highestByteIndex = a.size() - 1;
-    const std::uint64_t highestByte = a.back();
+    // to be in the very last limb of the vector.
+    const std::uint64_t highestLimbIndex = a.size() - 1;
+    const std::uint64_t highestLimb = a.back();
 
-    // Find the highest bit in just this one byte (max 64 iterations)
+    // Find the highest bit in just this one limb (max 64 iterations)
     for (std::int64_t bit = 63; bit >= 0; bit--) {
-        if ((highestByte & (0b1ULL << bit)) != 0) {
-            // Calculate total bit index: (Byte Position * 8) + Bit Position
-            return (highestByteIndex * 64) + bit;
+        if ((highestLimb & (0b1ULL << bit)) != 0) {
+            // Calculate total bit index: (limb position * 64) + bit position
+            return (highestLimbIndex * 64) + bit;
         }
     }
 
@@ -34,7 +34,7 @@
 [[nodiscard]] inline ByteArray convertToVector(const std::uint64_t number) noexcept {
     ByteArray result;
 
-    // Ensure 0 results in at least [0], never[]
+    // Ensure 0 results in at least [0], never []
     if (number == 0) return {0};
     result.push_back(number);
     return result;
@@ -58,11 +58,11 @@
 
     bool mostSignificantBit = (sourceNumber[sourceNumberIndex] & sourceNumberMask) != 0;
 
-    for (const std::uint64_t currentByte : numberToShift) {
-        // The mask for MSB is 0x80 (128). We evaluate this BEFORE currentByte gets
+    for (const std::uint64_t currentLimb : numberToShift) {
+        // Evaluate the MSB before the limb gets
         // overwritten/shifted.
-        const bool nextMSB = (currentByte & mask) != 0;
-        result.push_back(((currentByte << 1) | mostSignificantBit));
+        const bool nextMSB = (currentLimb & mask) != 0;
+        result.push_back(((currentLimb << 1) | mostSignificantBit));
         mostSignificantBit = nextMSB;
     }
 
@@ -80,20 +80,19 @@ inline void addBitFromNumberInPlace(ByteArray &numberToShift,
         return;
     }
 
-    // bitIndex & 7 is equivalent to bitIndex % 8
+    // bitIndex & 63 is equivalent to bitIndex % 64
     const std::uint64_t sourceNumberMask = 0b1ULL << (bitIndex & 63);
     constexpr std::uint64_t mask = 0x8000'0000'0000'0000UL;
 
-    // bitIndex >> 3 is equivalent to bitIndex / 8
     const std::uint64_t sourceNumberIndex = bitIndex / 64;
 
     bool mostSignificantBit = (sourceNumber[sourceNumberIndex] & sourceNumberMask) != 0;
     for (std::uint64_t &i : numberToShift) {
-        // The mask for MSB is 0x80 (128). We evaluate this BEFORE currentByte gets
+        // Evaluate the MSB before the limb gets
         // overwritten/shifted.
-        const std::uint64_t currentByte = i;
-        const bool nextMSB = (currentByte & mask) != 0;
-        i = (currentByte << 1) | mostSignificantBit;
+        const std::uint64_t currentLimb = i;
+        const bool nextMSB = (currentLimb & mask) != 0;
+        i = (currentLimb << 1) | mostSignificantBit;
         mostSignificantBit = nextMSB;
     }
 
@@ -149,4 +148,4 @@ inline void addBitFromNumberInPlace(ByteArray &numberToShift,
     return true;
 }
 
-#endif  // BASE_256_HELPER_H
+#endif  // BIGINT_HELPER_H

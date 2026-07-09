@@ -1,24 +1,24 @@
 #ifndef MATH_UTILS_H
 #define MATH_UTILS_H
 
-#include "base256.h"
+#include "bigint.h"
 
 namespace operations::math {
 
-    bool isOdd(const Base256 &val);
-    Base256 divideByTwo(const Base256 &val);
+    bool isOdd(const BigInt &val);
+    BigInt divideByTwo(const BigInt &val);
     // Computes the greatest common divisor of a and b
-    Base256 gcd(const Base256 &a, const Base256 &b);
+    BigInt gcd(const BigInt &a, const BigInt &b);
 
     // Computes the modular multiplicative inverse of a modulo m
-    Base256 modInverse(const Base256 &a, const Base256 &m);
+    BigInt modInverse(const BigInt &a, const BigInt &m);
 
     // Performs the Miller-Rabin primality test on n
-    bool isPrime(const Base256 &n);
+    bool isPrime(const BigInt &n);
 
-    Base256 pow(const Base256 &a, const std::uint64_t &pow);
+    BigInt pow(const BigInt &a, const std::uint64_t &pow);
 
-    Base256 modPow(Base256 base, Base256 exponent, const Base256 &modulus);
+    BigInt modPow(BigInt base, BigInt exponent, const BigInt &modulus);
 
 } // namespace operations::math
 
