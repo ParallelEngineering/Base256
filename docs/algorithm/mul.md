@@ -1,6 +1,6 @@
 # Multiplication Algorithm
 
-This document outlines the sequential multiplication logic implemented in the `Base256` class.
+This document outlines the sequential multiplication logic implemented in the `BigInt` class.
 
 ---
 
